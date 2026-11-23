@@ -43,6 +43,7 @@ namespace SoundCloudDesktop
         private Button _btnPrev;
         private Button _btnPlayPause;
         private Button _btnNext;
+        private Button _btnLyrics;
         private Button _btnTheme;
         private Button _btnMini;
         private Button _btnTopMost;
@@ -83,6 +84,7 @@ namespace SoundCloudDesktop
         private bool _webReady;
         private bool _isMiniMode;
         private bool _isFullscreen;
+        private bool _isLyricsOpen;
         private bool _allowExit;
         private volatile bool _stopPipe;
 
@@ -305,6 +307,16 @@ namespace SoundCloudDesktop
             _sepRight.BackColor = _activeTheme.BorderColor;
             _sepRight.Margin = new Padding(4, 4, 4, 4);
 
+            _btnLyrics = CreateToolbarButton("Lyrics", 50, "Lyrics (Ctrl+Y) \u2014 Right-click: Lyrics Page");
+            _btnLyrics.Click += delegate { ToggleLyrics(); };
+            _btnLyrics.MouseUp += delegate(object s, MouseEventArgs me)
+            {
+                if (me.Button == MouseButtons.Right)
+                {
+                    OpenLyricsPage();
+                }
+            };
+
             _btnTheme = CreateToolbarButton("Theme", 52, "Theme");
             _btnTheme.Click += OnThemeButtonClick;
 
@@ -321,6 +333,7 @@ namespace SoundCloudDesktop
             rightGroup.Controls.Add(_btnPlayPause);
             rightGroup.Controls.Add(_btnNext);
             rightGroup.Controls.Add(_sepRight);
+            rightGroup.Controls.Add(_btnLyrics);
             rightGroup.Controls.Add(_btnTheme);
             rightGroup.Controls.Add(_btnMini);
             rightGroup.Controls.Add(_btnTopMost);
@@ -331,7 +344,7 @@ namespace SoundCloudDesktop
                 _btnBack, _btnForward, _btnReload,
                 _btnHome, _btnLikes, _btnLibrary, _btnUpload,
                 _btnPrev, _btnPlayPause, _btnNext,
-                _btnTheme, _btnMini, _btnTopMost, _btnSettings
+                _btnLyrics, _btnTheme, _btnMini, _btnTopMost, _btnSettings
             };
 
             _lblNowPlaying = new Label();
@@ -682,6 +695,11 @@ namespace SoundCloudDesktop
 
         private bool HandleShortcut(Keys keyData)
         {
+            if (keyData == (Keys.Control | Keys.Y))
+            {
+                if (PassDebounce()) ToggleLyrics();
+                return true;
+            }
             if (keyData == (Keys.Control | Keys.M))
             {
                 if (PassDebounce()) ToggleMiniMode();
@@ -805,6 +823,11 @@ namespace SoundCloudDesktop
                 {
                     string prov = GetString(msg, "provider");
                     BeginInvoke((MethodInvoker)delegate { SetLyricsProvider(prov); });
+                }
+                else if (string.Equals(msgType, "lyricsState", StringComparison.Ordinal))
+                {
+                    _isLyricsOpen = GetBool(msg, "open");
+                    UpdateUiState();
                 }
                 else if (string.Equals(msgType, "nav", StringComparison.Ordinal))
                 {
@@ -1221,6 +1244,8 @@ namespace SoundCloudDesktop
 
         private void ReloadPage()
         {
+            _isLyricsOpen = false;
+            UpdateUiState();
             if (_webReady && _webView != null && _webView.CoreWebView2 != null)
             {
                 _webView.CoreWebView2.Reload();
@@ -1229,6 +1254,8 @@ namespace SoundCloudDesktop
 
         private void NavigateTo(string url)
         {
+            _isLyricsOpen = false;
+            UpdateUiState();
             if (_webReady && _webView != null && _webView.CoreWebView2 != null)
             {
                 _webView.CoreWebView2.Navigate(url);
@@ -1560,6 +1587,7 @@ namespace SoundCloudDesktop
             _toolbar.Visible = _settings.ShowToolbar && !_isMiniMode && !_isFullscreen;
 
             _btnPlayPause.ForeColor = _isPlaying ? _activeTheme.AccentColor : _activeTheme.TextPrimary;
+            if (_btnLyrics != null) _btnLyrics.ForeColor = _isLyricsOpen ? _activeTheme.AccentColor : _activeTheme.TextPrimary;
             _btnTheme.ForeColor = _activeTheme.AccentColor;
             _btnMini.ForeColor = _isMiniMode ? _activeTheme.AccentColor : _activeTheme.TextPrimary;
             _btnTopMost.ForeColor = _settings.AlwaysOnTop ? _activeTheme.AccentColor : _activeTheme.TextPrimary;
@@ -1593,6 +1621,11 @@ namespace SoundCloudDesktop
             _settings.Save();
             UpdateUiState();
             ApplyPageModes();
+        }
+
+        private void ToggleLyrics()
+        {
+            RunScript("window.__scLyricsToggle && window.__scLyricsToggle();");
         }
 
         private void OpenLyricsPage()
