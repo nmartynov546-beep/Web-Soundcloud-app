@@ -1,0 +1,10 @@
+# Build outputs & downloaded NuGet WebView2 dependencies
+dist/
+lib/webview2/
+lib/*.nupkg
+*.exe
+*.pdb
+*.user
+*.suo
+.vs/
+Thumbs.db
