@@ -433,7 +433,10 @@ namespace SoundCloudDesktop
             title = navigator.mediaSession.metadata.title || '';
             artist = navigator.mediaSession.metadata.artist || '';
         }
-        if (!title && tEl) title = (tEl.getAttribute('title') || tEl.textContent || '').trim();
+        if (!title && tEl) {
+            var vis = tEl.querySelector('span[aria-hidden]');
+            title = (tEl.getAttribute('title') || (vis && vis.textContent) || tEl.textContent || '').trim();
+        }
         if (!artist && aEl) artist = (aEl.getAttribute('title') || aEl.textContent || '').trim();
         var d = $('.playbackTimeline__duration span[aria-hidden]') || $('.playbackTimeline__duration');
         var durTxt = d ? (d.textContent || '').trim() : '';
@@ -451,8 +454,15 @@ namespace SoundCloudDesktop
         return S.base + dt;
     }
 
-    var css = document.createElement('style');
-    css.textContent =
+    var cssEl = null;
+    function ensureCss() {
+        var target = document.head || document.documentElement;
+        if (!target) return false;
+        if (cssEl && cssEl.isConnected) return true;
+        if (!cssEl) {
+            cssEl = document.createElement('style');
+            cssEl.id = 'sc-lyr-style';
+            cssEl.textContent =
         '#sc-lyr{position:fixed;right:16px;bottom:62px;width:min(380px,calc(100vw - 32px));height:min(54vh,calc(100vh - 82px));box-sizing:border-box;z-index:2147483000;display:none;flex-direction:column;background:var(--sc-surface,rgba(18,18,18,.94));backdrop-filter:blur(14px);border:1px solid var(--sc-border,rgba(255,255,255,.14));border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-family:Segoe UI,Arial,sans-serif;color:var(--sc-text,#fff);overflow:hidden}' +
         '#sc-lyr.on{display:flex}' +
         '#sc-lyr .h{padding:10px 14px;font-size:12px;color:var(--sc-muted,rgba(255,255,255,.7));display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--sc-border,rgba(255,255,255,.08))}' +
@@ -494,7 +504,10 @@ namespace SoundCloudDesktop
         '#sc-lyr-page .p{font-size:19px;font-weight:500;line-height:1.75;white-space:pre-wrap;opacity:.92;max-width:760px;margin:0 auto}' +
         '#sc-lyr-page .pm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sc-muted,rgba(255,255,255,.65));font-size:18px;pointer-events:none}' +
         'html.sc-desktop-mini #sc-lyr,html.sc-desktop-mini #sc-lyr-page{display:none!important}';
-    (document.head || document.documentElement).appendChild(css);
+        }
+        target.appendChild(cssEl);
+        return true;
+    }
 
     var panel, body, head, msg, page, pbody, pmsg, pArt, pTt, pAr, pTm, pPill, pAi, pTi, pPp;
     function el(tag, cls, parent, txt) {
@@ -518,7 +531,9 @@ namespace SoundCloudDesktop
         });
     }
     function build() {
-        if (panel || !document.body) return;
+        ensureCss();
+        if (!document.body) return;
+        if (panel && panel.isConnected) return;
         panel = document.createElement('div'); panel.id = 'sc-lyr';
         head = document.createElement('div'); head.className = 'h';
         var ht = document.createElement('span'); ht.id = 'sc-lyr-t'; head.appendChild(ht);
@@ -716,7 +731,7 @@ namespace SoundCloudDesktop
             e.preventDefault(); toggle();
         }
     }, true);
-    function init() { build(); }
+    function init() { ensureCss(); build(); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 ";
