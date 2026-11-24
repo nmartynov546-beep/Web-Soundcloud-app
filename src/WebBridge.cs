@@ -361,17 +361,33 @@ namespace SoundCloudDesktop
                 display: inline-flex !important;
                 align-items: center !important;
                 flex-shrink: 0 !important;
-                gap: 6px !important;
+                gap: 4px !important;
                 margin-left: 8px !important;
                 margin-right: 2px !important;
                 overflow: visible !important;
             }
+            .playbackSoundBadge__actions .sc-button,
+            .playbackSoundBadge__actions button {
+                width: 26px !important;
+                min-width: 26px !important;
+                max-width: 26px !important;
+                height: 26px !important;
+                min-height: 26px !important;
+                max-height: 26px !important;
+                box-sizing: border-box !important;
+                padding: 0 !important;
+                border-radius: 4px !important;
+            }
             .playbackSoundBadge__showQueue {
-                width: 32px !important;
-                min-width: 32px !important;
-                height: 32px !important;
+                width: 26px !important;
+                min-width: 26px !important;
+                max-width: 26px !important;
+                height: 26px !important;
+                min-height: 26px !important;
+                max-height: 26px !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                border-radius: 4px !important;
                 display: inline-flex !important;
                 align-items: center !important;
                 justify-content: center !important;
@@ -382,10 +398,12 @@ namespace SoundCloudDesktop
             }
             .playbackSoundBadge__showQueue svg,
             .playbackSoundBadge__queueIcon {
-                width: 18px !important;
-                height: 18px !important;
-                min-width: 18px !important;
-                min-height: 18px !important;
+                width: 16px !important;
+                height: 16px !important;
+                min-width: 16px !important;
+                min-height: 16px !important;
+                max-width: 16px !important;
+                max-height: 16px !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 display: block !important;

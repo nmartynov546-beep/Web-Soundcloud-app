@@ -470,7 +470,7 @@ namespace SoundCloudDesktop
             cssEl = document.createElement('style');
             cssEl.id = 'sc-lyr-style';
             cssEl.textContent =
-        '#sc-lyr{position:fixed;right:16px;bottom:62px;width:min(380px,calc(100vw - 32px));height:min(54vh,calc(100vh - 82px));box-sizing:border-box;z-index:2147483000;display:none;flex-direction:column;background:var(--sc-surface,rgba(18,18,18,.94));backdrop-filter:blur(14px);border:1px solid var(--sc-border,rgba(255,255,255,.14));border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-family:Segoe UI,Arial,sans-serif;color:var(--sc-text,#fff);overflow:hidden}' +
+        '#sc-lyr{position:fixed;left:16px;bottom:62px;width:min(380px,calc(100vw - 32px));height:min(54vh,calc(100vh - 82px));box-sizing:border-box;z-index:2147483000;display:none;flex-direction:column;background:var(--sc-surface,rgba(18,18,18,.94));backdrop-filter:blur(14px);border:1px solid var(--sc-border,rgba(255,255,255,.14));border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-family:Segoe UI,Arial,sans-serif;color:var(--sc-text,#fff);overflow:hidden}' +
         '#sc-lyr.on{display:flex}' +
         '#sc-lyr .h{padding:10px 14px;font-size:12px;color:var(--sc-muted,rgba(255,255,255,.7));display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--sc-border,rgba(255,255,255,.08))}' +
         '#sc-lyr .h span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
