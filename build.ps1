@@ -62,6 +62,9 @@ $CscArgs = @(
     "/out:$OutputExe"
     "/win32icon:$IconPath"
     "/win32manifest:$ManifestPath"
+    "/res:$WebView2WinFormsDll,Microsoft.Web.WebView2.WinForms.dll"
+    "/res:$WebView2CoreDll,Microsoft.Web.WebView2.Core.dll"
+    "/res:$WebView2LoaderDll,WebView2Loader.dll"
     '/reference:System.dll'
     '/reference:System.Core.dll'
     '/reference:System.Drawing.dll'

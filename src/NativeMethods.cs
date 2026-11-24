@@ -26,6 +26,12 @@ namespace SoundCloudDesktop
         [DllImport("user32.dll")]
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool SetDllDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern IntPtr LoadLibrary(string lpLibFileName);
+
         public const int SW_RESTORE = 9;
 
         public static void EnableDpiAwareness()
