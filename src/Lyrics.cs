@@ -394,7 +394,7 @@ namespace SoundCloudDesktop
         public static readonly string InitScript = @"
 (function () {
     if (window.__scLyrics) return;
-    var S = { on: false, pageOn: false, key: '', autoKey: '', manual: null, source: '', lines: null, plain: null, state: 'idle', idx: -2, base: 0, t0: 0, lastTxt: '', playing: false, lastToggle: 0 };
+    var S = { on: false, pageOn: false, key: '', autoKey: '', manual: null, source: '', lines: null, plain: null, state: 'idle', idx: -2, wIdx: -2, base: 0, t0: 0, pausedDt: 0, lastTxt: '', playing: false, lastToggle: 0, raf: 0 };
     window.__scLyrics = S;
 
     function send(o) { try { window.chrome.webview.postMessage(JSON.stringify(o)); } catch (_) {} }
@@ -448,9 +448,16 @@ namespace SoundCloudDesktop
         var txt = el ? el.textContent : '';
         var sec = parseT(txt);
         var pb = $('.playControl');
+        var wasPlaying = S.playing;
         S.playing = !!(pb && pb.classList.contains('playing'));
-        if (txt !== S.lastTxt && !isNaN(sec)) { S.lastTxt = txt; S.base = sec; S.t0 = now; }
-        var dt = S.playing ? Math.min(1, (now - S.t0) / 1000) : 0;
+        if (txt !== S.lastTxt && !isNaN(sec)) {
+            S.lastTxt = txt; S.base = sec; S.t0 = now; S.pausedDt = 0;
+        } else if (wasPlaying && !S.playing) {
+            S.pausedDt = Math.min(1, Math.max(0, (now - S.t0) / 1000));
+        } else if (!wasPlaying && S.playing) {
+            S.t0 = now - (S.pausedDt || 0) * 1000;
+        }
+        var dt = S.playing ? Math.min(1.05, Math.max(0, (now - S.t0) / 1000)) : (S.pausedDt || 0);
         return S.base + dt;
     }
 
@@ -471,9 +478,13 @@ namespace SoundCloudDesktop
         '#sc-lyr .h b:hover{opacity:1;color:var(--sc-accent,#ff5500)}' +
         '#sc-lyr .b{position:relative;flex:1;overflow-y:auto;padding:40% 18px;scroll-behavior:smooth;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent)}' +
         '#sc-lyr .b::-webkit-scrollbar{display:none}' +
-        '#sc-lyr .l{font-size:20px;font-weight:700;line-height:1.35;margin:10px 0;opacity:.5;transition:all .3s ease;cursor:pointer;transform-origin:left center}' +
-        '#sc-lyr .l.past{opacity:.28}' +
-        '#sc-lyr .l.cur{opacity:1;color:var(--sc-accent,#ff5500);transform:scale(1.06)}' +
+        '#sc-lyr .l{font-size:20px;font-weight:700;line-height:1.35;margin:10px 0;opacity:.46;transition:opacity .28s ease,transform .28s ease;cursor:pointer;transform-origin:left center}' +
+        '#sc-lyr .l.past{opacity:.26}' +
+        '#sc-lyr .l.cur{opacity:1;color:var(--sc-text,#fff);transform:scale(1.04)}' +
+        '#sc-lyr .w,#sc-lyr-page .w{display:inline-block;transition:opacity .12s ease,color .12s ease,transform .14s ease,text-shadow .14s ease;transform-origin:center baseline}' +
+        '#sc-lyr .l.cur .w,#sc-lyr-page .l.cur .w{opacity:.38}' +
+        '#sc-lyr .l.cur .w.done,#sc-lyr-page .l.cur .w.done{color:var(--sc-accent,#ff5500);opacity:.84}' +
+        '#sc-lyr .l.cur .w.now,#sc-lyr-page .l.cur .w.now{color:var(--sc-accent,#ff5500);opacity:1;transform:translateY(-1px) scale(1.06);text-shadow:0 0 14px rgba(var(--sc-accent-rgb,255,85,0),.48)}' +
         '#sc-lyr .p{font-size:15px;font-weight:500;opacity:.88;white-space:pre-wrap;line-height:1.6}' +
         '#sc-lyr .m{position:absolute;inset:40px 0 0 0;display:flex;align-items:center;justify-content:center;color:var(--sc-muted,rgba(255,255,255,.65));font-size:15px;pointer-events:none}' +
         '#sc-lyr .h .pg{cursor:pointer;font-size:11px;font-weight:600;line-height:1;padding:4px 8px;border-radius:10px;border:1px solid var(--sc-border,rgba(255,255,255,.18));background:var(--sc-surface-2,rgba(255,255,255,.06));color:var(--sc-text,#fff);flex-shrink:0;white-space:nowrap}' +
@@ -497,10 +508,10 @@ namespace SoundCloudDesktop
         '#sc-lyr-page .stage{position:relative;flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}' +
         '#sc-lyr-page .pb{position:relative;flex:1;overflow-y:auto;padding:38vh 10% 38vh 8%;scroll-behavior:smooth;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}' +
         '#sc-lyr-page .pb::-webkit-scrollbar{display:none}' +
-        '#sc-lyr-page .l{font-size:clamp(22px,3vw,36px);font-weight:800;line-height:1.35;margin:18px 0;opacity:.38;transition:all .28s ease;cursor:pointer;transform-origin:left center}' +
+        '#sc-lyr-page .l{font-size:clamp(22px,3vw,36px);font-weight:800;line-height:1.35;margin:18px 0;opacity:.38;transition:opacity .28s ease,transform .28s ease;cursor:pointer;transform-origin:left center}' +
         '#sc-lyr-page .l:hover{opacity:.75}' +
         '#sc-lyr-page .l.past{opacity:.22}' +
-        '#sc-lyr-page .l.cur{opacity:1;color:var(--sc-accent,#ff5500);transform:scale(1.04)}' +
+        '#sc-lyr-page .l.cur{opacity:1;color:var(--sc-text,#fff);transform:scale(1.03)}' +
         '#sc-lyr-page .p{font-size:19px;font-weight:500;line-height:1.75;white-space:pre-wrap;opacity:.92;max-width:760px;margin:0 auto}' +
         '#sc-lyr-page .pm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sc-muted,rgba(255,255,255,.65));font-size:18px;pointer-events:none}' +
         'html.sc-desktop-mini #sc-lyr,html.sc-desktop-mini #sc-lyr-page{display:none!important}';
@@ -529,6 +540,10 @@ namespace SoundCloudDesktop
         ['mousedown', 'mouseup', 'click'].forEach(function (ev) {
             bar.dispatchEvent(new MouseEvent(ev, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
         });
+        S.base = Math.max(0, Math.min(i.duration, sec));
+        S.t0 = performance.now();
+        S.pausedDt = 0;
+        highlight(S.base, true);
     }
     function build() {
         ensureCss();
@@ -603,7 +618,7 @@ namespace SoundCloudDesktop
         S.on = (typeof v === 'boolean') ? v : !S.on;
         panel.classList.toggle('on', S.on);
         notifyState();
-        if (S.on) { S.key = ''; tick(); }
+        if (S.on) { if (!S.lines && !S.plain) S.key = ''; tick(); highlight(pos(), true); }
     }
     function openPage(v) {
         build(); if (!page) return;
@@ -616,8 +631,55 @@ namespace SoundCloudDesktop
     window.__scLyricsOpenPage = function () { openPage(true); };
     S.reload = function () { if (S.on || S.pageOn) { S.key = ''; tick(); } };
     function setMsg(t) { if (msg) msg.textContent = t || ''; if (pmsg) pmsg.textContent = t || ''; }
-    function clear() { if (body) body.innerHTML = ''; if (pbody) pbody.innerHTML = ''; S.lines = null; S.plain = null; S.idx = -2; }
+    function clear() { if (body) body.innerHTML = ''; if (pbody) pbody.innerHTML = ''; S.lines = null; S.plain = null; S.idx = -2; S.wIdx = -2; }
 
+    function tokenizeLine(raw, lineT, shiftSec) {
+        var tagRe = /<(\d+):(\d+(?:[.:]\d+)?)>/g;
+        var hasTags = tagRe.test(raw);
+        tagRe.lastIndex = 0;
+        var tokens = [], words = [], cleanText = '', delta = shiftSec || 0;
+        if (hasTags) {
+            var segs = [], lastIdx = 0, curT = lineT, tm;
+            while ((tm = tagRe.exec(raw)) !== null) {
+                if (tm.index > lastIdx) segs.push({ t: curT, s: raw.slice(lastIdx, tm.index) });
+                curT = parseInt(tm[1], 10) * 60 + parseFloat(tm[2].replace(':', '.')) + delta;
+                lastIdx = tagRe.lastIndex;
+            }
+            if (lastIdx < raw.length) segs.push({ t: curT, s: raw.slice(lastIdx) });
+            segs.forEach(function (seg) {
+                seg.s.split(/(\s+)/).forEach(function (part) {
+                    if (!part) return;
+                    cleanText += part;
+                    if (/^\s+$/.test(part)) {
+                        tokens.push({ w: false, s: part });
+                    } else {
+                        var wObj = { s: part, wt: seg.t, t: seg.t, end: seg.t + 0.3, el: null, pel: null };
+                        words.push(wObj);
+                        tokens.push({ w: true, ref: wObj });
+                    }
+                });
+            });
+        } else {
+            cleanText = raw;
+            raw.split(/(\s+)/).forEach(function (part) {
+                if (!part) return;
+                if (/^\s+$/.test(part)) {
+                    tokens.push({ w: false, s: part });
+                } else {
+                    var wObj = { s: part, wt: null, t: lineT, end: lineT + 0.3, el: null, pel: null };
+                    words.push(wObj);
+                    tokens.push({ w: true, ref: wObj });
+                }
+            });
+        }
+        cleanText = cleanText.trim();
+        if (!words.length) {
+            var note = { s: '\u266A', wt: hasTags ? lineT : null, t: lineT, end: lineT + 1.5, el: null, pel: null };
+            words.push(note);
+            tokens = [{ w: true, ref: note }];
+        }
+        return { s: cleanText, hasTags: hasTags, tokens: tokens, words: words };
+    }
     function parseLrc(txt) {
         var out = [], re = /\[(\d+):(\d+(?:[.:]\d+)?)\]/g;
         txt.split(/\r?\n/).forEach(function (ln) {
@@ -625,23 +687,94 @@ namespace SoundCloudDesktop
             re.lastIndex = 0;
             while ((m = re.exec(ln)) !== null) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); last = re.lastIndex; }
             if (!times.length) return;
-            var text = ln.slice(last).trim();
-            times.forEach(function (t) { out.push({ t: t, s: text }); });
+            var text = ln.slice(last).trim(), tBase = times[0];
+            times.forEach(function (t) {
+                var tk = tokenizeLine(text, t, t - tBase);
+                out.push({ t: t, s: tk.s, hasTags: tk.hasTags, tokens: tk.tokens, words: tk.words });
+            });
         });
         out.sort(function (a, b) { return a.t - b.t; });
+        for (var i = 0; i < out.length; i++) {
+            var l = out[i], nextT = l.t + 4.0;
+            for (var n = i + 1; n < out.length; n++) {
+                if (out[n].t > l.t + 0.05) { nextT = out[n].t; break; }
+            }
+            var rawDur = Math.max(0.35, nextT - l.t), W = l.words;
+            if (!W || !W.length) continue;
+            if (l.hasTags) {
+                var gStart = 0;
+                while (gStart < W.length) {
+                    var gEnd = gStart;
+                    var baseT = (typeof W[gStart].wt === 'number' && !isNaN(W[gStart].wt)) ? W[gStart].wt : l.t;
+                    while (gEnd + 1 < W.length && Math.abs(((W[gEnd + 1].wt !== null ? W[gEnd + 1].wt : baseT) - baseT)) < 0.01) gEnd++;
+                    var limitT = (gEnd + 1 < W.length && W[gEnd + 1].wt > baseT) ? W[gEnd + 1].wt : Math.min(nextT, baseT + Math.max(0.6, (gEnd - gStart + 1) * 0.45));
+                    var span = Math.max(0.12, limitT - baseT), tw = 0;
+                    for (var q = gStart; q <= gEnd; q++) {
+                        var cl = W[q].s.replace(/[.,!?;:'\x22()\[\]{}\u2014\-]/g, '').length;
+                        W[q].weight = Math.max(1, cl) + 0.8;
+                        tw += W[q].weight;
+                    }
+                    var acc = 0;
+                    for (var q2 = gStart; q2 <= gEnd; q2++) {
+                        W[q2].t = baseT + span * (acc / tw);
+                        acc += W[q2].weight;
+                        W[q2].end = baseT + span * (acc / tw);
+                    }
+                    gStart = gEnd + 1;
+                }
+            } else {
+                var charLen = 0, totalWeight = 0;
+                for (var k = 0; k < W.length; k++) {
+                    var cleanLen = W[k].s.replace(/[.,!?;:'\x22()\[\]{}\u2014\-]/g, '').length;
+                    charLen += Math.max(1, cleanLen);
+                    W[k].weight = Math.max(1, cleanLen) + 0.8;
+                    totalWeight += W[k].weight;
+                }
+                var singDur = Math.min(rawDur, Math.max(1.2, charLen * 0.15 + W.length * 0.12));
+                var accW = 0;
+                for (var k2 = 0; k2 < W.length; k2++) {
+                    W[k2].t = l.t + singDur * (accW / totalWeight);
+                    accW += W[k2].weight;
+                    W[k2].end = l.t + singDur * (accW / totalWeight);
+                }
+            }
+        }
         return out;
+    }
+    function buildLineDom(l, isPage) {
+        var d = document.createElement('div');
+        d.className = 'l';
+        d.onclick = function () { seekTo(l.t); };
+        if (l.tokens && l.tokens.length) {
+            l.tokens.forEach(function (tok) {
+                if (!tok.w) {
+                    d.appendChild(document.createTextNode(tok.s));
+                } else {
+                    var sp = document.createElement('span');
+                    sp.className = 'w';
+                    sp.textContent = tok.ref.s;
+                    sp.onclick = function (ev) {
+                        ev.stopPropagation();
+                        seekTo(typeof tok.ref.t === 'number' ? tok.ref.t : l.t);
+                    };
+                    d.appendChild(sp);
+                    if (isPage) tok.ref.pel = sp; else tok.ref.el = sp;
+                }
+            });
+        } else {
+            d.textContent = l.s || '\u266A';
+        }
+        return d;
     }
     function render() {
         body.innerHTML = '';
         if (pbody) pbody.innerHTML = '';
         if (S.lines && S.lines.length) {
             S.lines.forEach(function (l) {
-                var d = document.createElement('div'); d.className = 'l'; d.textContent = l.s || '\u266A';
-                d.onclick = function () { seekTo(l.t); };
+                var d = buildLineDom(l, false);
                 body.appendChild(d); l.el = d;
                 if (pbody) {
-                    var pd = document.createElement('div'); pd.className = 'l'; pd.textContent = l.s || '\u266A';
-                    pd.onclick = function () { seekTo(l.t); };
+                    var pd = buildLineDom(l, true);
                     pbody.appendChild(pd); l.pel = pd;
                 }
             });
@@ -669,27 +802,69 @@ namespace SoundCloudDesktop
             pPill.style.display = 'none';
         }
         render();
+        highlight(pos(), true);
+        ensureRaf();
     };
     function highlight(p, force) {
         if (S.state !== 'synced' || !S.lines) return;
         var idx = -1, L = S.lines;
-        for (var i = 0; i < L.length; i++) { if (L[i].t <= p + 0.15) idx = i; else break; }
-        if (idx === S.idx && !force) return;
-        S.idx = idx;
-        for (var j = 0; j < L.length; j++) {
-            var cls = 'l' + (j < idx ? ' past' : (j === idx ? ' cur' : ''));
-            if (L[j].el) L[j].el.className = cls;
-            if (L[j].pel) L[j].pel.className = cls;
+        for (var i = 0; i < L.length; i++) { if (L[i].t <= p + 0.12) idx = i; else break; }
+        var lineChanged = (idx !== S.idx);
+        if (lineChanged || force) {
+            if (S.idx >= 0 && S.idx < L.length && L[S.idx].words) {
+                var oldW = L[S.idx].words;
+                for (var r = 0; r < oldW.length; r++) {
+                    if (oldW[r].el) oldW[r].el.className = 'w';
+                    if (oldW[r].pel) oldW[r].pel.className = 'w';
+                }
+            }
+            S.idx = idx;
+            S.wIdx = -2;
+            for (var j = 0; j < L.length; j++) {
+                var cls = 'l' + (j < idx ? ' past' : (j === idx ? ' cur' : ''));
+                if (L[j].el) L[j].el.className = cls;
+                if (L[j].pel) L[j].pel.className = cls;
+            }
+            if (idx >= 0) {
+                if (S.on && L[idx].el) {
+                    var e = L[idx].el;
+                    body.scrollTo({ top: e.offsetTop - body.clientHeight / 2 + e.clientHeight / 2, behavior: 'smooth' });
+                }
+                if (S.pageOn && pbody && L[idx].pel) {
+                    var pe = L[idx].pel;
+                    pbody.scrollTo({ top: pe.offsetTop - pbody.clientHeight / 2 + pe.clientHeight / 2, behavior: 'smooth' });
+                }
+            }
         }
-        if (idx >= 0) {
-            if (S.on && L[idx].el) {
-                var e = L[idx].el;
-                body.scrollTo({ top: e.offsetTop - body.clientHeight / 2 + e.clientHeight / 2, behavior: 'smooth' });
+        if (idx >= 0 && L[idx].words && L[idx].words.length) {
+            var W = L[idx].words, wIdx = 0;
+            for (var k = 0; k < W.length; k++) {
+                if (p + 0.04 >= W[k].t) wIdx = k; else break;
             }
-            if (S.pageOn && pbody && L[idx].pel) {
-                var pe = L[idx].pel;
-                pbody.scrollTo({ top: pe.offsetTop - pbody.clientHeight / 2 + pe.clientHeight / 2, behavior: 'smooth' });
+            if (wIdx === W.length - 1 && p > W[wIdx].end + 0.15) {
+                wIdx = W.length;
             }
+            if (wIdx !== S.wIdx || lineChanged || force) {
+                S.wIdx = wIdx;
+                for (var m = 0; m < W.length; m++) {
+                    var wCls = 'w' + (m < wIdx ? ' done' : (m === wIdx ? ' now' : ''));
+                    if (W[m].el) W[m].el.className = wCls;
+                    if (W[m].pel) W[m].pel.className = wCls;
+                }
+            }
+        }
+    }
+    function rafStep() {
+        S.raf = 0;
+        if ((!S.on && !S.pageOn) || S.state !== 'synced' || !S.lines) return;
+        highlight(pos(), false);
+        if (S.playing) {
+            S.raf = window.requestAnimationFrame(rafStep);
+        }
+    }
+    function ensureRaf() {
+        if (!S.raf && (S.on || S.pageOn) && S.state === 'synced' && S.playing && S.lines) {
+            S.raf = window.requestAnimationFrame(rafStep);
         }
     }
     function tick() {
@@ -720,6 +895,7 @@ namespace SoundCloudDesktop
             send({ type: 'lyricsRequest', key: key, artist: qArtist, title: qTitle, duration: isNaN(i.duration) ? 0 : i.duration });
         }
         highlight(p, false);
+        ensureRaf();
     }
     setInterval(tick, 120);
 
